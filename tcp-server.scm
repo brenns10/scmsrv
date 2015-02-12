@@ -6,8 +6,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; How messages should end.
-(define newline (name->char "newline"))
-(define end-message (string newline newline))
+(define end-message "\n\n")
 
 ;; Read character, append to string, and continue until the message ends with
 ;; the end-message sequence.
@@ -31,9 +30,12 @@
 
 (define handle-requests
   (lambda (server-socket handler)
-    (handler (tcp-server-connection-accept server-socket #t #f))
-    (handle-requests server-socket handler)))
+    (handler (tcp-server-connection-accept server-socket #t #f))))
+;;    (handle-requests server-socket handler)))
 
 (define run-server
   (lambda (socket handler)
-    (handle-requests (open-tcp-server-socket socket) handler)))
+    (let* ((server-socket (open-tcp-server-socket socket))
+           (rval (handle-requests server-socket handler)))
+      (close-tcp-server-socket server-socket)
+      rval)))
