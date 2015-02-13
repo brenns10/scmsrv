@@ -7,21 +7,32 @@
 ;; Utility Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; string-split: Splits a string on a separator.  That is, returns all non-empty
-;; strings delimited by the separator. EG:
-;; (string-split #\space "fragment another   the_third")
-;; => '("frament" "another" "the_third")
+;; string-split-lim: Returns list of all non-empty strings in str in between
+;; separator character sep.  Limits to lim strings.  If lim is 0, there is no
+;; limit (you can also use string-split for this).  Example:
+;; (string-split-lim #\space "fragment  another the_third and_more" 3)
+;; => '("fragment" "another" "the_third and_more")
+(define string-split-lim
+  (lambda (sep str lim)
+    (letrec
+        ((string-split
+          (lambda (start end lim)
+            (cond
+             ((>= start (string-length str)) '())
+             ((zero? lim) (list (substring str start (string-length str))))
+             ((eq? sep (string-ref str start))
+              (string-split (+ start 1) (+ start 2) lim))
+             ((>= end (string-length str)) (list (substring str start end)))
+             ((eq? sep (string-ref str end))
+              (cons (substring str start end) (string-split (+ end 1)
+                                                            (+ end 2)
+                                                            (- lim 1))))
+             (else (string-split start (+ end 1) lim))))))
+      (string-split 0 1 (- lim 1)))))
+
 (define string-split
   (lambda (sep str)
-    ((lambda (f a b) (f f a b))
-      (lambda (self start end)
-        (cond
-         ((>= start (string-length str)) '())
-         ((eq? sep (string-ref str start)) (self self (+ start 1) (+ start 2)))
-         ((>= end (string-length str)) (cons (substring str start end) '()))
-         ((eq? sep (string-ref str end)) (cons (substring str start end)
-                                               (self self (+ end 1) (+ end 2))))
-         (else (self self start (+ end 1))))) 0 1)))
+    (string-split-lim sep str 0)))
 
 ;; parse-headers: Takes a list of header lines and returns a list of (header
 ;; value) pairs.
@@ -31,7 +42,7 @@
   (lambda (line-list)
     (if (null? line-list)
         '()
-        (cons (map string-trim (string-split #\: (car line-list)))
+        (cons (map string-trim (string-split-lim #\: (car line-list) 2))
               (parse-headers (cdr line-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,13 +83,14 @@
 ;; Lookup a header in an http-request object.
 (define req-header
   (lambda (request header)
-    ((lambda (f l) (f f l))
-     (lambda (self hlist)
-       (cond
-        ((null? hlist) 'not-found)
-        ((string=? header (caar hlist)) (cdar hlist))
-        (else (self self (cdr hlist)))))
-     (req-headers request))))
+    (letrec
+        ((req-header
+          (lambda (hlist)
+            (cond
+             ((null? hlist) 'not-found)
+             ((string=? header (caar hlist)) (cadar hlist))
+             (else (req-header (cdr hlist)))))))
+      (req-header (req-headers request)))))
 
 ;; TCP Server Handler for HTTP.  Reads a single HTTP request from the input
 ;; port, parses it, and writes a 404 response.
