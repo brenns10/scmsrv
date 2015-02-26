@@ -237,10 +237,15 @@
 ;; TCP Server Handler for HTTP.  Reads a single HTTP request from the input
 ;; port, parses it, and writes out this file as a response.
 (define http-handler
-  (lambda (port)
-    (let ((request (http-request-parse (read-message port))))
-      (display request)
-      (resp-write (resp-new 200 '() (body-file "http-server.scm")) port)
-      (flush-output port)
-      (close-output-port port)
-      request)))
+  (lambda (request-handler)
+    (lambda (port)
+      (let* ((request (http-request-parse (read-message port)))
+             (response (request-handler request)))
+        (display request)
+        (newline)
+        (resp-write response port)
+        (flush-output port)
+        (close-output-port port)
+        (display response)
+        (newline)
+        request))))

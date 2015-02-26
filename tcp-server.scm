@@ -30,8 +30,8 @@
 
 (define handle-requests
   (lambda (server-socket handler)
-    (handler (tcp-server-connection-accept server-socket #t #f))))
-;;    (handle-requests server-socket handler)))
+    (handler (tcp-server-connection-accept server-socket #t #f))
+    (handle-requests server-socket handler)))
 
 (define run-server
   (lambda (socket handler)
