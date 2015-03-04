@@ -19,13 +19,22 @@
   (lambda (s1 s2)
     (string-append (ensure-trailing/ s1) (ensure-no-starting/ s2))))
 
+(define index
+  (lambda (f)
+    (if (not (file-executable? f))
+        http-403
+        (resp-new 200 '() (body-text (string-join "\n" (map ->namestring (ensure-trailing/ f))))))))
+
 (define static-handler
   (lambda (root)
     (lambda (request)
       (let ((f (path-join root (req-url request))))
-        (if (file-exists? f)
-            (resp-new 200 '() (body-file f))
-            http-404)))))
+        (cond
+         ((not (file-exists? f)) http-404)
+         ((file-directory? f) (index f))
+         ((not (file-readable? f)) http-403)
+         (else (resp-new 200 '() (body-file f))))))))
+
 
 (define run-static-server
   (lambda (port root)

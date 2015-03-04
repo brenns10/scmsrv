@@ -233,6 +233,7 @@
 
 ;; 404 response constant.  It's useful, I promise.
 (define http-404 (resp-new 404 '() (body-text "Not found.")))
+(define http-403 (resp-new 403 '() (body-text "Forbidden.")))
 
 ;; TCP Server Handler for HTTP.  Reads a single HTTP request from the input
 ;; port, parses it, and writes out this file as a response.
