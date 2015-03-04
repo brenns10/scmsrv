@@ -23,7 +23,7 @@
   (lambda (f)
     (if (not (file-executable? f))
         http-403
-        (resp-new 200 '() (body-text (string-join "\n" (map ->namestring (ensure-trailing/ f))))))))
+        (resp-new 200 '() (body-text (string-join "\n" (map ->namestring (directory-read (ensure-trailing/ f)))))))))
 
 (define static-handler
   (lambda (root)
